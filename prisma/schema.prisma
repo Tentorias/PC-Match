@@ -1,0 +1,61 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum CategoriaComponente {
+  CPU
+  GPU
+  RAM
+  PLACA_MAE
+  FONTE
+  COOLER
+  ARMAZENAMENTO
+  GABINETE
+}
+
+model Componente {
+  id             Int                 @id @default(autoincrement())
+  nome           String
+  categoria      CategoriaComponente
+  marca          String
+  modelo         String
+  preco          Float
+  tdp            Int                 // TDP em Watts
+  socket         String?             // Para CPU e Placa-mãe (ex: AM4, AM5, LGA1700)
+  tipoRam        String?             // Para Placa-mãe e RAM (ex: DDR4, DDR5)
+  clock          Float?              // GHz para CPU/GPU ou MHz para RAM
+  potencia       Int?                // Watts para Fonte (FONTE)
+  capacidade     String?             // Ex: "16GB", "1TB SSD", "8GB VRAM"
+  especificacoes Json                // Detalhes extras em JSON (ex: cores/threads, VRAM, eficiência)
+  estoque        Int                 @default(0)
+  vendas         Int                 @default(0)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+}
+
+model Jogo {
+  id                     Int      @id @default(autoincrement())
+  nome                   String   @unique
+  slug                   String   @unique
+  descricao              String?
+  imagemUrl              String?
+  requisitosMinimos      Json     // Ex: { cpuRank: 5, gpuRank: 5, ramGb: 8 }
+  requisitosRecomendados Json     // Ex: { cpuRank: 8, gpuRank: 8, ramGb: 16 }
+  benchmarks             Json?    // Perfis de performance (ex: { low_1080p: 60, high_1080p: 45 })
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model LogBusca {
+  id             Int      @id @default(autoincrement())
+  timestamp      DateTime @default(now())
+  orcamento      Float?
+  jogoNome       String?
+  resolucaoAlvo  String?
+  sucesso        Boolean  @default(true)
+  componentesIds Json?    // IDs das peças recomendadas ou visualizadas
+}
