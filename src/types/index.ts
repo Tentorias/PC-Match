@@ -1,4 +1,5 @@
-import { Componente, CategoriaComponente, Jogo } from "@prisma/client";
+import { CategoriaComponente, Componente, Jogo } from "@prisma/client";
+export type { Componente, Jogo };
 
 export type CategoriaKey = keyof typeof CategoriaComponente;
 
