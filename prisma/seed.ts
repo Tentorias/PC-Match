@@ -1,6 +1,5 @@
-import { PrismaClient, CategoriaComponente } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { CategoriaComponente } from "@prisma/client";
+import { prisma, pgPool } from "../src/lib/db";
 
 async function main() {
   console.log("Iniciando o semeio do banco de dados (seeding)...");
@@ -267,4 +266,7 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    if (pgPool) {
+      await pgPool.end();
+    }
   });
