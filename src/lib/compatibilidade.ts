@@ -20,6 +20,7 @@ export function verificarCompatibilidade(componentes: Componente[]): ResultadoCo
   const memorias = componentes.filter((c) => c.categoria === CategoriaComponente.RAM);
   const gpu = componentes.find((c) => c.categoria === CategoriaComponente.GPU);
   const fonte = componentes.find((c) => c.categoria === CategoriaComponente.FONTE);
+  const cooler = componentes.find((c) => c.categoria === CategoriaComponente.COOLER && (c.tdp || 0) > 0);
 
   // 1. Socket CPU vs Placa-Mãe
   if (cpu && placaMae) {
@@ -56,11 +57,23 @@ export function verificarCompatibilidade(componentes: Componente[]): ResultadoCo
         erros.push(
           `Energia insuficiente: O consumo estimado do sistema é de ~${consumoEstimadoW}W, superando os ${potenciaFonte}W fornecidos pela fonte (${fonte.nome}).`
         );
-      } else if (consumoEstimadoW > potenciaFonte * 0.85) {
-        avisos.push(
-          `Margem de segurança baixa: A fonte de ${potenciaFonte}W vai operar próxima ao limite sob carga máxima (~${consumoEstimadoW}W). Recomenda-se pelo menos ${potenciaRecomendadaW}W.`
+      } else if (potenciaFonte < potenciaRecomendadaW) {
+        // Agora isso é um erro rígido
+        erros.push(
+          `Margem de segurança da fonte insuficiente: A fonte de ${potenciaFonte}W não suporta a máquina de ~${consumoEstimadoW}W com 25% de margem. Requer no mínimo ${potenciaRecomendadaW}W.`
         );
       }
+    }
+  }
+
+  // 3.5 TDP Cooler vs CPU
+  if (cpu && cooler) {
+    const coolerTdp = cooler.tdp || 0;
+    const cpuTdp = cpu.tdp || 0;
+    if (coolerTdp > 0 && cpuTdp > 0 && coolerTdp < cpuTdp) {
+      erros.push(
+        `Risco Térmico: O Cooler selecionado (${cooler.nome}) suporta apenas dissipar ${coolerTdp}W, mas o processador (${cpu.nome}) atinge ${cpuTdp}W. O processador irá superaquecer.`
+      );
     }
   }
 

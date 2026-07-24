@@ -18,28 +18,29 @@ export function otimizarSetup(
   todosComponentes: Componente[],
   orcamentoMax: number,
   preferencias?: {
-    focoGpu?: boolean; // Se verdadeiro, dá mais peso para placa de vídeo (jogos pesados graficamente)
-    focoCpu?: boolean; // Se verdadeiro, dá mais peso para processador (jogos competitivos leves)
+    focoGpu?: boolean;
+    focoCpu?: boolean;
   }
 ): SetupOtimizado | null {
   const cpus = todosComponentes.filter((c) => c.categoria === CategoriaComponente.CPU);
   const gpus = todosComponentes.filter((c) => c.categoria === CategoriaComponente.GPU);
   const placaMaes = todosComponentes.filter((c) => c.categoria === CategoriaComponente.PLACA_MAE);
   const memorias = todosComponentes.filter((c) => c.categoria === CategoriaComponente.RAM);
-  const fontes = todosComponentes.filter((c) => c.categoria === CategoriaComponente.FONTE);
+  const fontes = todosComponentes.filter((c) => c.categoria === CategoriaComponente.FONTE).sort((a, b) => a.preco - b.preco);
+  const coolers = todosComponentes.filter((c) => c.categoria === CategoriaComponente.COOLER && (c.tdp || 0) > 0).sort((a, b) => a.preco - b.preco);
+  const armazenamentos = todosComponentes.filter((c) => c.categoria === CategoriaComponente.ARMAZENAMENTO).sort((a, b) => a.preco - b.preco);
+  const gabinetes = todosComponentes.filter((c) => c.categoria === CategoriaComponente.GABINETE).sort((a, b) => a.preco - b.preco);
 
-  if (cpus.length === 0 || gpus.length === 0 || placaMaes.length === 0 || memorias.length === 0 || fontes.length === 0) {
-    return null;
+  if (cpus.length === 0 || gpus.length === 0 || placaMaes.length === 0 || memorias.length === 0 || fontes.length === 0 || armazenamentos.length === 0 || gabinetes.length === 0) {
+    return null; // Impossível montar PC sem o mínimo de peças no estoque
   }
 
   let melhorCombinacao: Componente[] = [];
   let maiorDesempenho = 0;
   let menorCusto = 0;
 
-  // Ajusta pesos de desempenho teórico
   let pesoCpu = 0.4;
   let pesoGpu = 0.6;
-
   if (preferencias?.focoGpu) {
     pesoCpu = 0.25;
     pesoGpu = 0.75;
@@ -48,60 +49,60 @@ export function otimizarSetup(
     pesoGpu = 0.4;
   }
 
-  // Busca exaustiva com podas rápidas por preço e compatibilidade
-  for (const cpu of cpus) {
-    if (cpu.preco > orcamentoMax) continue;
+  const discoMaisBarato = armazenamentos[0];
+  const gabineteMaisBarato = gabinetes[0];
 
+  for (const cpu of cpus) {
     for (const placaMae of placaMaes) {
-      if (cpu.preco + placaMae.preco > orcamentoMax) continue;
-      // Poda por socket
       if (cpu.socket && placaMae.socket && cpu.socket.trim().toLowerCase() !== placaMae.socket.trim().toLowerCase()) continue;
 
       for (const ram of memorias) {
-        const custoParcial1 = cpu.preco + placaMae.preco + ram.preco;
-        if (custoParcial1 > orcamentoMax) continue;
-        // Poda por tipo de RAM
         if (placaMae.tipoRam && ram.tipoRam && placaMae.tipoRam.trim().toLowerCase() !== ram.tipoRam.trim().toLowerCase()) continue;
 
         for (const gpu of gpus) {
-          const custoParcial2 = custoParcial1 + gpu.preco;
-          if (custoParcial2 > orcamentoMax) continue;
+          // 1. Achar o cooler compatível mais barato
+          const coolerIdeal = coolers.find(c => (c.tdp || 0) >= (cpu.tdp || 0));
+          if (!coolerIdeal) continue; // Sem cooler que suporte essa CPU no estoque
 
-          for (const fonte of fontes) {
-            const custoTotal = custoParcial2 + fonte.preco;
-            if (custoTotal > orcamentoMax) continue;
+          // 2. Calcular consumo de energia
+          const consumoEstimado = (cpu.tdp || 0) + (gpu.tdp || 0) + 50; 
+          const potenciaMinima = consumoEstimado * 1.25;
 
-            const setup = [cpu, placaMae, ram, gpu, fonte];
-            const compCheck = verificarCompatibilidade(setup);
+          // 3. Achar a fonte compatível mais barata
+          const fonteIdeal = fontes.find(f => (f.potencia || 0) >= potenciaMinima);
+          if (!fonteIdeal) continue; // Sem fonte potente o suficiente no estoque
 
-            // Apenas combinações perfeitamente compatíveis
-            if (!compCheck.compativel) continue;
+          // 4. Somar custo total da build completa
+          const custoTotal = cpu.preco + placaMae.preco + ram.preco + gpu.preco + coolerIdeal.preco + fonteIdeal.preco + discoMaisBarato.preco + gabineteMaisBarato.preco;
 
-            // Cálculo do score de desempenho teórico (baseado no custo relativo e clock/especificações)
-            const scoreCpu = (cpu.clock || 3.0) * (cpu.preco / 100);
-            const scoreGpu = (gpu.clock || 1.5) * (gpu.preco / 100);
-            const desempenhoTeorico = scoreCpu * pesoCpu + scoreGpu * pesoGpu;
+          if (custoTotal > orcamentoMax) continue;
 
-            if (desempenhoTeorico > maiorDesempenho) {
-              maiorDesempenho = desempenhoTeorico;
-              melhorCombinacao = setup;
-              menorCusto = custoTotal;
-            }
+          // 5. Verificar compatibilidade estrita
+          const setup = [cpu, placaMae, ram, gpu, fonteIdeal, coolerIdeal, discoMaisBarato, gabineteMaisBarato];
+          const compCheck = verificarCompatibilidade(setup);
+          if (!compCheck.compativel) continue;
+
+          // 6. Calcular Score
+          const scoreCpu = (cpu.clock || 3.0) * (cpu.preco / 100);
+          const scoreGpu = (gpu.clock || 1.5) * (gpu.preco / 100);
+          const desempenhoTeorico = scoreCpu * pesoCpu + scoreGpu * pesoGpu;
+
+          if (desempenhoTeorico > maiorDesempenho) {
+            maiorDesempenho = desempenhoTeorico;
+            melhorCombinacao = setup;
+            menorCusto = custoTotal;
           }
         }
       }
     }
   }
 
-  if (melhorCombinacao.length === 0) {
-    return null;
-  }
+  if (melhorCombinacao.length === 0) return null;
 
-  // Identificação de gargalo
   const cpuEscolhida = melhorCombinacao.find((c) => c.categoria === CategoriaComponente.CPU)!;
   const gpuEscolhida = melhorCombinacao.find((c) => c.categoria === CategoriaComponente.GPU)!;
+  
   let gargalo = "Equilibrado";
-
   if (cpuEscolhida.preco < gpuEscolhida.preco * 0.25) {
     gargalo = "Processador Fraco (Pode limitar o desempenho da Placa de Vídeo)";
   } else if (gpuEscolhida.preco < cpuEscolhida.preco * 0.4) {

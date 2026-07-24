@@ -1,74 +1,115 @@
-import React from "react";
-import { Card } from "@/components/ui/Card";
+import { getDashboardStats } from "@/app/actions/dashboard";
+import { Activity, Search, DollarSign, Target, Trophy, Flame } from "lucide-react";
 
-export default function DashboardAdminPage() {
+export const dynamic = "force-dynamic";
+
+export default async function DashboardPage() {
+  const stats = await getDashboardStats();
+
   return (
-    <main className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="space-y-8 relative z-10">
       <div>
-        <h1 className="text-2xl font-black text-white tracking-tight">Painel Executivo</h1>
-        <p className="text-sm text-slate-400">Métricas de comportamento de clientes e performance de estoque.</p>
+        <h1 className="text-3xl font-bold text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)] mb-2">
+          Visão Geral
+        </h1>
+        <p className="text-cyan-200/60">Acompanhe as métricas em tempo real do quiosque.</p>
       </div>
 
-      {/* Grid de Métricas Principais */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <Card variant="glass" className="p-6 border-cyan-500/10">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Buscas Realizadas</p>
-          <div className="flex justify-between items-baseline">
-            <span className="text-3xl font-extrabold text-cyan-400">1,482</span>
-            <span className="text-xs text-emerald-500 font-medium">+12.3% (semana)</span>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        {/* Card 1 */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-400/20 transition-all"></div>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-cyan-500/30 flex items-center justify-center shadow-[inset_0_0_15px_rgba(0,180,255,0.2)]">
+              <Search className="w-6 h-6 text-cyan-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-cyan-200/70">Total de Buscas</p>
+              <p className="text-2xl font-bold text-white">{stats.totalBuscas}</p>
+            </div>
           </div>
-        </Card>
+          <div className="flex items-center gap-2 text-xs text-green-400 font-medium">
+            <Activity className="w-3 h-3" />
+            <span>+12% desde ontem</span>
+          </div>
+        </div>
 
-        <Card variant="glass" className="p-6 border-pink-500/10">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Orçamento Médio</p>
-          <div className="flex justify-between items-baseline">
-            <span className="text-3xl font-extrabold text-pink-500">R$ 5.250</span>
-            <span className="text-xs text-slate-400 font-medium">Resol. Alvo: 1080p</span>
+        {/* Card 2 */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-3xl group-hover:bg-green-400/20 transition-all"></div>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30 flex items-center justify-center shadow-[inset_0_0_15px_rgba(74,222,128,0.2)]">
+              <DollarSign className="w-6 h-6 text-green-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-cyan-200/70">Ticket Médio</p>
+              <p className="text-2xl font-bold text-white">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.orcamentoMedio)}
+              </p>
+            </div>
           </div>
-        </Card>
+          <div className="flex items-center gap-2 text-xs text-white/50 font-medium">
+            <span>Orçamento médio informado</span>
+          </div>
+        </div>
 
-        <Card variant="glass" className="p-6 border-emerald-500/10">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Itens em Alerta (Estoque)</p>
-          <div className="flex justify-between items-baseline">
-            <span className="text-3xl font-extrabold text-emerald-400">4 peças</span>
-            <span className="text-xs text-pink-400 font-medium">Reabastecer</span>
+        {/* Card 3 */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-400/20 transition-all"></div>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-fuchsia-500/20 border border-purple-500/30 flex items-center justify-center shadow-[inset_0_0_15px_rgba(192,132,252,0.2)]">
+              <Target className="w-6 h-6 text-purple-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-cyan-200/70">Taxa de Sucesso</p>
+              <p className="text-2xl font-bold text-white">{stats.taxaSucesso.toFixed(1)}%</p>
+            </div>
           </div>
-        </Card>
+          <div className="w-full bg-black/40 rounded-full h-1.5 mt-2 overflow-hidden">
+            <div 
+              className="bg-gradient-to-r from-purple-500 to-fuchsia-400 h-1.5 rounded-full"
+              style={{ width: `${stats.taxaSucesso}%` }}
+            ></div>
+          </div>
+        </div>
       </div>
 
-      {/* Grid de Detalhes Adicionais */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card variant="flat" className="p-6">
-          <h2 className="text-base font-bold text-white mb-4">Jogos Mais Selecionados</h2>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-slate-300">1. Cyberpunk 2077</span>
-              <span className="font-semibold text-cyan-400">42% das buscas</span>
+      {/* Seção de Jogos em Alta */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <Flame className="w-5 h-5 text-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+          Jogos em Alta
+        </h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {stats.topJogos.map((jogo, idx) => (
+            <div key={jogo.nome} className="bg-gradient-to-b from-white/10 to-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-1 shadow-[0_8px_24px_rgba(0,0,0,0.4)] relative overflow-hidden">
+              {/* Glossy highlight top */}
+              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
+              
+              <div className="bg-black/40 rounded-xl p-5 h-full flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold text-lg text-white/50">
+                    #{idx + 1}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-lg">{jogo.nome}</h3>
+                    <p className="text-xs text-cyan-300/60 font-medium">{jogo.contagem} buscas recentes</p>
+                  </div>
+                </div>
+                {idx === 0 && (
+                  <Trophy className="w-8 h-8 text-yellow-400 drop-shadow-[0_0_12px_rgba(250,204,21,0.6)]" />
+                )}
+              </div>
             </div>
-            <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
-              <div className="bg-cyan-400 h-full rounded-full" style={{ width: "42%" }} />
+          ))}
+          {stats.topJogos.length === 0 && (
+            <div className="col-span-3 text-center py-12 text-white/40 font-medium">
+              Nenhuma busca registrada ainda.
             </div>
-
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-slate-300">2. Valorant</span>
-              <span className="font-semibold text-pink-500">35% das buscas</span>
-            </div>
-            <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
-              <div className="bg-pink-500 h-full rounded-full" style={{ width: "35%" }} />
-            </div>
-          </div>
-        </Card>
-
-        <Card variant="flat" className="p-6">
-          <h2 className="text-base font-bold text-white mb-4">Alertas de Gargalo Frequentes</h2>
-          <div className="space-y-4 text-sm text-slate-300">
-            <div className="p-3 bg-pink-950/20 border border-pink-500/20 rounded-xl">
-              <span className="font-semibold text-pink-400 block mb-1">Processador Subdimensionado</span>
-              Usuários tentando parear Ryzen 5 3600 com RTX 4070 Ti devido ao orçamento limitado.
-            </div>
-          </div>
-        </Card>
+          )}
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

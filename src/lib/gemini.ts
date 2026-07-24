@@ -1,15 +1,8 @@
-/**
- * Integração e prompts com a API do Gemini
- */
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export interface GeminiMessage {
   role: "user" | "model";
-  text: string;
-}
-
-export interface GeminiResponse {
-  text: string;
-  recommendedComponents?: string[];
+  parts: { text: string }[];
 }
 
 /**
@@ -18,26 +11,67 @@ export interface GeminiResponse {
 export async function sendChatMessage(
   message: string,
   history: GeminiMessage[] = []
-): Promise<GeminiResponse> {
-  // TODO: Integrar com o pacote oficial @google/generative-ai
-  console.log("Enviando mensagem para o Gemini:", { message, historyLength: history.length });
+) {
+  const currentApiKey = process.env.GEMINI_API_KEY || "";
+  if (!currentApiKey) {
+    return {
+      text: "Erro: A chave de API do Gemini não está configurada no servidor (GEMINI_API_KEY).",
+      recommendedComponents: []
+    };
+  }
 
-  return {
-    text: "Olá! Sou o assistente virtual do PC-analyzer. Estou aqui para te ajudar a escolher a melhor configuração de PC para os seus jogos favoritos. (Integração pendente da GEMINI_API_KEY no arquivo .env)",
-    recommendedComponents: []
-  };
+  const genAI = new GoogleGenerativeAI(currentApiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+  const chat = model.startChat({
+    history: history,
+    generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: 1000,
+    },
+  });
+
+  try {
+    const result = await chat.sendMessage(message);
+    const responseText = result.response.text();
+    return {
+      text: responseText,
+    };
+  } catch (error) {
+    console.error("Erro ao chamar o Gemini:", error);
+    return {
+      text: "Desculpe, ocorreu um erro ao processar sua mensagem."
+    };
+  }
 }
 
 /**
- * Gera um prompt customizado para sugerir um PC baseado em orçamento e jogos alvo
+ * Chama o Gemini solicitando JSON (usado para NLP e Admin)
  */
-export function generateSystemPrompt(
-  budget: number,
-  games: string[],
-  resolution: string
-): string {
-  return `Você é um especialista em hardware de computadores.
-Sugira a melhor configuração de PC para rodar os seguintes jogos: ${games.join(", ")} na resolução ${resolution}.
-O orçamento disponível é de R$ ${budget.toFixed(2)}.
-Certifique-se de escolher peças compatíveis e equilibradas (sem gargalos severos de CPU/GPU).`;
+export async function getJsonFromGemini(prompt: string, schema: string): Promise<any> {
+  const currentApiKey = process.env.GEMINI_API_KEY || "";
+  if (!currentApiKey) {
+    throw new Error("GEMINI_API_KEY não configurada.");
+  }
+  
+  const genAI = new GoogleGenerativeAI(currentApiKey);
+  const model = genAI.getGenerativeModel({ 
+    model: "gemini-1.5-flash",
+    generationConfig: {
+      temperature: 0.1,
+      responseMimeType: "application/json",
+    }
+  });
+
+  const fullPrompt = `${prompt}\n\nRetorne EXATAMENTE UM objeto JSON seguindo esta estrutura:\n${schema}`;
+
+  const result = await model.generateContent(fullPrompt);
+  const text = result.response.text();
+  
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("Falha ao fazer parse do JSON do Gemini", text);
+    throw new Error("O Gemini não retornou um JSON válido.");
+  }
 }
