@@ -45,7 +45,10 @@ export function verificarCompatibilidade(componentes: Componente[]): ResultadoCo
   // 3. Consumo Energético e Fonte (TDP)
   let consumoEstimadoW = 50; // Consumo base para placa-mãe, ventoinhas e periféricos
   componentes.forEach((c) => {
-    consumoEstimadoW += c.tdp || 0;
+    // O TDP do cooler é sua capacidade de dissipação de calor, não o quanto de energia ele puxa da fonte.
+    if (c.categoria !== CategoriaComponente.COOLER) {
+      consumoEstimadoW += c.tdp || 0;
+    }
   });
 
   const potenciaRecomendadaW = Math.ceil((consumoEstimadoW * 1.25) / 50) * 50; // 25% de margem, arredondado para cima múltiplo de 50W

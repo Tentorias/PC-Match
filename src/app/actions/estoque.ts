@@ -25,8 +25,8 @@ export async function salvarComponente(data: any) {
           tdp: data.tdp,
           socket: data.socket,
           tipoRam: data.tipoRam,
-          frequenciaRam: data.frequenciaRam,
-          capacidadeGB: data.capacidadeGB,
+          clock: data.frequenciaRam || data.clock,
+          capacidade: data.capacidadeGB || data.capacidade,
           especificacoes: data.especificacoes,
         }
       });

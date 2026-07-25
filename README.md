@@ -8,8 +8,8 @@ O **PC-Analyzer** é uma plataforma inteligente desenvolvida para lojas de infor
 ### 🛒 Kiosk de IA (Atendimento Automático)
 - **Chat Conversacional:** Atendimento ao cliente totalmente mediado por IA (Gemini 1.5 Flash).
 - **Extração de NLP:** O sistema entende linguagem natural e extrai orçamento máximo, foco (CPU, GPU ou Balanceado) e os jogos desejados.
-- **Otimizador Algorítmico (Knapsack):** Um motor de otimização próprio que vasculha o estoque em tempo real e monta as **8 peças fundamentais** do computador de forma matematicamente precisa, entregando o maior desempenho (FPS) sem estourar o orçamento.
-- **Segurança de Hardware Rígida:** A máquina otimizada nunca recomendará uma configuração com risco de superaquecimento (Validação TDP CPU vs Cooler) ou falta de energia (Validação Consumo Total vs PSU).
+- **Otimizador Algorítmico (Knapsack Multi-Tier):** Um motor matemático próprio vasculha o estoque em tempo real e avalia as 8 peças vitais para montar um PC perfeito sem estourar o orçamento. Ele tenta construir até 3 opções simultâneas: **Máximo**, **Custo-Benefício** e **Econômico**, protegendo o cliente de gargalos graças a uma IA limitadora embutida no Knapsack.
+- **Segurança de Hardware Rígida:** O sistema possui tolerância zero com problemas elétricos e térmicos. Validações estritas de TDP (para processadores vs coolers) e de potência total (consumo estimado vs margem segura da fonte) garantem que a máquina montada nunca terá thermal-throttling ou reiniciará por falta de força.
 
 ### 🛠️ Painel Admin Inteligente
 - **Dashboard Estatístico:** Relatórios de termos mais buscados (Jogos em Alta), Ticket Médio desejado pelos clientes e conversões.
@@ -41,10 +41,11 @@ O **PC-Analyzer** é uma plataforma inteligente desenvolvida para lojas de infor
    npx prisma db push
    ```
 5. **(Opcional) Popule o banco com peças de teste:**
-   Rode os nossos scripts de seed para gerar centenas de gabinetes, fontes, coolers, placas e processadores (desde os High-End até peças "sucatas" baratas para testes de stress de orçamento):
+   Rode os nossos scripts localizados na pasta `scripts/` para gerar centenas de jogos atuais, GPUs High-End, Water Coolers e Fontes (necessários para montar setups acima de 15 mil reais).
    ```bash
-   npx tsx seed_test.ts
-   npx tsx seed_coolers_psu.ts
+   npx tsx scripts/scratch_seed_games.ts
+   npx tsx scripts/scratch_seed_high_end.ts
+   npx tsx scripts/scratch_seed_support.ts
    ```
 6. Inicie o servidor local:
    ```bash

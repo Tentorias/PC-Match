@@ -18,6 +18,11 @@ export default function GuidedKioskPage() {
   const [resolucao, setResolucao] = useState<string>("1080p");
   const [orcamento, setOrcamento] = useState<number>(5000);
   const [foco, setFoco] = useState<"gpu" | "cpu">("gpu");
+  
+  // New metrics
+  const [searchJogo, setSearchJogo] = useState("");
+  const [qualidade, setQualidade] = useState<string>("Medium");
+  const [fps, setFps] = useState<string>("60");
 
   const toggleJogoSelecionado = (jogo: Jogo) => {
     setJogosSelecionados((prev) => {
@@ -32,7 +37,8 @@ export default function GuidedKioskPage() {
 
   // Result State
   const [calculando, setCalculando] = useState(false);
-  const [resultado, setResultado] = useState<any>(null);
+  const [resultados, setResultados] = useState<any[]>([]);
+  const [opcaoSelecionada, setOpcaoSelecionada] = useState<number>(0);
   const [erroResultado, setErroResultado] = useState<string | null>(null);
 
   // Load games from DB
@@ -80,10 +86,13 @@ export default function GuidedKioskPage() {
           focoCpu: foco === "cpu",
           jogoNome: jogosSelecionados.map((j) => j.nome).join(" + "),
           resolucaoAlvo: resolucao,
+          qualidadeGrafica: qualidade,
+          fpsAlvo: fps,
         });
 
-        if (res.sucesso && res.dados) {
-          setResultado(res.dados);
+        if (res.sucesso && res.dados && res.dados.length > 0) {
+          setResultados(res.dados);
+          setOpcaoSelecionada(res.dados.length - 1); // Foca na última (Máxima) por padrão
           setStep(4);
         } else {
           setErroResultado(res.mensagem);
@@ -162,13 +171,42 @@ export default function GuidedKioskPage() {
               </p>
             </div>
 
+            {/* Search Bar for Custom Games */}
+            <div className="relative">
+              <input 
+                type="text" 
+                value={searchJogo}
+                onChange={(e) => setSearchJogo(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchJogo.trim()) {
+                    e.preventDefault();
+                    setJogosSelecionados(prev => [...prev, {
+                      id: Date.now(), // ID fake para key
+                      nome: searchJogo.trim(),
+                      slug: searchJogo.trim().toLowerCase().replace(/\s+/g, '-'),
+                      descricao: "Jogo personalizado",
+                      requisitosMinimos: {},
+                      requisitosRecomendados: {}
+                    } as any]);
+                    setSearchJogo("");
+                  }
+                }}
+                placeholder="Não achou na lista? Digite o nome de qualquer jogo e aperte Enter..."
+                className="w-full bg-slate-950/80 border border-white/10 rounded-xl px-4 py-4 pr-12 text-white focus:outline-none focus:border-cyan-500 transition-colors shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xl opacity-50">🔍</span>
+            </div>
+
             {loadingJogos ? (
               <div className="h-48 flex items-center justify-center text-cyan-400 font-semibold gap-2 animate-pulse">
                 <span>⚡</span> Carregando biblioteca de jogos...
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {jogos.map((jogo) => {
+                {jogos
+                  .filter((j) => j.nome.toLowerCase().includes(searchJogo.toLowerCase()))
+                  .slice(0, 3)
+                  .map((jogo) => {
                   const selecionado = jogosSelecionados.some((j) => j.id === jogo.id);
                   return (
                     <button
@@ -202,6 +240,24 @@ export default function GuidedKioskPage() {
               </div>
             )}
 
+            {/* Selected Games Tags */}
+            {jogosSelecionados.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {jogosSelecionados.map(jogo => (
+                  <div key={jogo.id} className="flex items-center gap-1 bg-cyan-950/40 border border-cyan-500/30 text-cyan-300 px-3 py-1.5 rounded-full text-xs font-semibold shadow-[0_0_10px_rgba(6,182,212,0.1)] transition-all hover:bg-cyan-900/50">
+                    <span>{jogo.nome}</span>
+                    <button 
+                      onClick={() => toggleJogoSelecionado(jogo)}
+                      className="ml-1 hover:text-white transition-colors cursor-pointer"
+                      title="Remover jogo"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="border-t border-white/5 pt-6 space-y-4">
               <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">
                 Resolução Alvo
@@ -222,6 +278,53 @@ export default function GuidedKioskPage() {
                     }`}
                   >
                     <div className="font-bold text-white text-xs">{item.label}</div>
+                    <div className="text-[9px] text-slate-500 mt-1">{item.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-white/5 pt-6 space-y-4">
+              <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">
+                Qualidade Gráfica Desejada
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {["Low", "Medium", "High", "Ultra"].map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => setQualidade(q)}
+                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${
+                      qualidade === q
+                        ? "bg-cyan-500/10 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.15)]"
+                        : "bg-slate-950/40 border-white/5 hover:bg-slate-950/70"
+                    }`}
+                  >
+                    <div className="font-bold text-white text-sm">{q}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-white/5 pt-6 space-y-4">
+              <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">
+                Taxa de Quadros (FPS)
+              </h3>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: "60", label: "60 FPS", desc: "Fluidez padrão" },
+                  { value: "144", label: "144 FPS", desc: "Competitivo (Suave)" },
+                  { value: "240", label: "240+ FPS", desc: "Pro Player" },
+                ].map((item) => (
+                  <button
+                    key={item.value}
+                    onClick={() => setFps(item.value)}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      fps === item.value
+                        ? "bg-pink-500/10 border-pink-500 shadow-[0_0_15px_rgba(219,39,119,0.15)]"
+                        : "bg-slate-950/40 border-white/5 hover:bg-slate-950/70"
+                    }`}
+                  >
+                    <div className="font-bold text-white text-sm">{item.label}</div>
                     <div className="text-[9px] text-slate-500 mt-1">{item.desc}</div>
                   </button>
                 ))}
@@ -358,6 +461,25 @@ export default function GuidedKioskPage() {
             </Card>
           ) : (
             <>
+              {/* Opções de Orçamento (Tabs) */}
+              {resultados.length > 1 && (
+                <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
+                  {resultados.map((opcao, index) => (
+                    <button
+                      key={opcao.id}
+                      onClick={() => setOpcaoSelecionada(index)}
+                      className={`px-6 py-3 rounded-full font-bold uppercase tracking-wider text-xs transition-all duration-300 border-2 ${
+                        opcaoSelecionada === index
+                          ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.4)]"
+                          : "bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+                      }`}
+                    >
+                      {opcao.nome} <span className="opacity-75 font-normal block text-[10px] mt-1">{formatarMoeda(opcao.setup.precoTotal)}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {/* Header metrics */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card variant="neon" hoverEffect={false} className="p-4 flex flex-col justify-center">
@@ -365,7 +487,7 @@ export default function GuidedKioskPage() {
                     Preço Total
                   </span>
                   <span className="text-xl font-extrabold text-cyan-400">
-                    {formatarMoeda(resultado.precoTotal)}
+                    {formatarMoeda(resultados[opcaoSelecionada].setup.precoTotal)}
                   </span>
                 </Card>
                 <Card variant="neon" hoverEffect={false} className="p-4 flex flex-col justify-center">
@@ -373,7 +495,7 @@ export default function GuidedKioskPage() {
                     Margem de Orçamento
                   </span>
                   <span className="text-xs font-semibold text-slate-300">
-                    Sobrou {formatarMoeda(orcamento - resultado.precoTotal)}
+                    Sobrou {formatarMoeda(orcamento - resultados[opcaoSelecionada].setup.precoTotal)}
                   </span>
                 </Card>
                 <Card variant="neon" hoverEffect={false} className="p-4 flex flex-col justify-center">
@@ -382,7 +504,7 @@ export default function GuidedKioskPage() {
                   </span>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-lg font-extrabold text-pink-500">
-                      {calcularUpgradability(resultado.componentes)}/10
+                      {calcularUpgradability(resultados[opcaoSelecionada].setup.componentes)}/10
                     </span>
                     <span className="text-[8px] text-slate-500 border border-slate-800 rounded px-1 uppercase">
                       Nota de Upgrade
@@ -394,7 +516,7 @@ export default function GuidedKioskPage() {
                     Status de Gargalo
                   </span>
                   <span className="text-xs font-semibold text-white leading-tight">
-                    {resultado.gargalo}
+                    {resultados[opcaoSelecionada].setup.gargalo}
                   </span>
                 </Card>
               </div>
@@ -403,8 +525,8 @@ export default function GuidedKioskPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 space-y-3">
                   <h2 className="text-lg font-bold text-white px-2">Peças Selecionadas</h2>
-                  <div className="space-y-2">
-                    {resultado.componentes.map((c: Componente) => (
+                  <div className="space-y-3">
+                    {resultados[opcaoSelecionada].setup.componentes.map((c: Componente) => (
                       <div
                         key={c.id}
                         className="bg-slate-950/60 border border-white/5 hover:border-white/10 rounded-xl p-4 flex items-center justify-between transition-all"
@@ -448,8 +570,8 @@ export default function GuidedKioskPage() {
                     </p>
                     <div className="flex flex-col gap-2">
                       {jogosSelecionados.map((jogo) => {
-                        const cpu = resultado.componentes.find((c: Componente) => c.categoria === "CPU");
-                        const gpu = resultado.componentes.find((c: Componente) => c.categoria === "GPU");
+                        const cpu = resultados[opcaoSelecionada].setup.componentes.find((c: Componente) => c.categoria === "CPU");
+                        const gpu = resultados[opcaoSelecionada].setup.componentes.find((c: Componente) => c.categoria === "GPU");
                         if (cpu && gpu) {
                           const query = encodeURIComponent(
                             `${cpu.modelo} + ${gpu.modelo} + ${jogo.nome} Benchmark`

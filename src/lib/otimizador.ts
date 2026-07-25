@@ -49,20 +49,21 @@ export function otimizarSetup(
     pesoGpu = 0.4;
   }
 
-  const discoMaisBarato = armazenamentos[0];
-  const gabineteMaisBarato = gabinetes[0];
+  const gabinetesOrdenados = gabinetes.sort((a, b) => b.preco - a.preco);
+  const discosOrdenados = armazenamentos.sort((a, b) => b.preco - a.preco);
+  const ramOrdenadas = memorias.sort((a, b) => b.preco - a.preco);
 
   for (const cpu of cpus) {
     for (const placaMae of placaMaes) {
       if (cpu.socket && placaMae.socket && cpu.socket.trim().toLowerCase() !== placaMae.socket.trim().toLowerCase()) continue;
 
-      for (const ram of memorias) {
+      for (const ram of ramOrdenadas) {
         if (placaMae.tipoRam && ram.tipoRam && placaMae.tipoRam.trim().toLowerCase() !== ram.tipoRam.trim().toLowerCase()) continue;
 
         for (const gpu of gpus) {
           // 1. Achar o cooler compatível mais barato
           const coolerIdeal = coolers.find(c => (c.tdp || 0) >= (cpu.tdp || 0));
-          if (!coolerIdeal) continue; // Sem cooler que suporte essa CPU no estoque
+          if (!coolerIdeal) continue; 
 
           // 2. Calcular consumo de energia
           const consumoEstimado = (cpu.tdp || 0) + (gpu.tdp || 0) + 50; 
@@ -70,27 +71,39 @@ export function otimizarSetup(
 
           // 3. Achar a fonte compatível mais barata
           const fonteIdeal = fontes.find(f => (f.potencia || 0) >= potenciaMinima);
-          if (!fonteIdeal) continue; // Sem fonte potente o suficiente no estoque
+          if (!fonteIdeal) continue; 
 
-          // 4. Somar custo total da build completa
-          const custoTotal = cpu.preco + placaMae.preco + ram.preco + gpu.preco + coolerIdeal.preco + fonteIdeal.preco + discoMaisBarato.preco + gabineteMaisBarato.preco;
+          // 4. Testar Armazenamento e Gabinete tentando preencher o orçamento
+          for (const disco of discosOrdenados) {
+            for (const gabinete of gabinetesOrdenados) {
+              const custoTotal = cpu.preco + placaMae.preco + ram.preco + gpu.preco + coolerIdeal.preco + fonteIdeal.preco + disco.preco + gabinete.preco;
 
-          if (custoTotal > orcamentoMax) continue;
+              if (custoTotal > orcamentoMax) continue;
 
-          // 5. Verificar compatibilidade estrita
-          const setup = [cpu, placaMae, ram, gpu, fonteIdeal, coolerIdeal, discoMaisBarato, gabineteMaisBarato];
-          const compCheck = verificarCompatibilidade(setup);
-          if (!compCheck.compativel) continue;
+              // 5. Verificar compatibilidade estrita
+              const setup = [cpu, placaMae, ram, gpu, fonteIdeal, coolerIdeal, disco, gabinete];
+              const compCheck = verificarCompatibilidade(setup);
+              if (!compCheck.compativel) continue;
 
-          // 6. Calcular Score
-          const scoreCpu = (cpu.clock || 3.0) * (cpu.preco / 100);
-          const scoreGpu = (gpu.clock || 1.5) * (gpu.preco / 100);
-          const desempenhoTeorico = scoreCpu * pesoCpu + scoreGpu * pesoGpu;
+              // 6. Calcular Score (Incluindo RAM e Armazenamento no multiplicador)
+              const scoreCpu = (cpu.clock || 3.0) * (cpu.preco / 100);
+              const scoreGpu = (gpu.clock || 1.5) * (gpu.preco / 100);
+              const scoreRam = (ram.clock || 3200) / 1000 * (ram.preco / 100);
+              const scoreDisco = (disco.preco / 100);
+              
+              let penalty = 1.0;
+              const ratioCpuGpu = cpu.preco / gpu.preco;
+              if (ratioCpuGpu < 0.25) penalty = 0.5; // Penaliza duramente se a CPU for muito fraca para a GPU
+              else if (ratioCpuGpu > 2.5) penalty = 0.8; // Penaliza levemente CPU absurdamente mais cara que a GPU
+              
+              const desempenhoTeorico = (scoreCpu * pesoCpu + scoreGpu * pesoGpu + scoreRam * 0.1 + scoreDisco * 0.05) * penalty;
 
-          if (desempenhoTeorico > maiorDesempenho) {
-            maiorDesempenho = desempenhoTeorico;
-            melhorCombinacao = setup;
-            menorCusto = custoTotal;
+              if (desempenhoTeorico > maiorDesempenho) {
+                maiorDesempenho = desempenhoTeorico;
+                melhorCombinacao = setup;
+                menorCusto = custoTotal;
+              }
+            }
           }
         }
       }

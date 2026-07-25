@@ -56,6 +56,8 @@ model LogBusca {
   orcamento      Float?
   jogoNome       String?
   resolucaoAlvo  String?
+  qualidadeGrafica String?
+  fpsAlvo        String?
   sucesso        Boolean  @default(true)
   componentesIds Json?    // IDs das peças recomendadas ou visualizadas
 }
