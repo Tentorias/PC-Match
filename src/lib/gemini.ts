@@ -21,7 +21,7 @@ export async function sendChatMessage(
   }
 
   const genAI = new GoogleGenerativeAI(currentApiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
   const chat = model.startChat({
     history: history,
@@ -56,7 +56,7 @@ export async function getJsonFromGemini(prompt: string, schema: string): Promise
   
   const genAI = new GoogleGenerativeAI(currentApiKey);
   const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
+    model: "gemini-3.5-flash",
     generationConfig: {
       temperature: 0.1,
       responseMimeType: "application/json",
@@ -66,7 +66,10 @@ export async function getJsonFromGemini(prompt: string, schema: string): Promise
   const fullPrompt = `${prompt}\n\nRetorne EXATAMENTE UM objeto JSON seguindo esta estrutura:\n${schema}`;
 
   const result = await model.generateContent(fullPrompt);
-  const text = result.response.text();
+  let text = result.response.text();
+  
+  // O Gemini 3.5 pode acabar envolvendo o JSON em blocos de markdown, mesmo com responseMimeType
+  text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
   
   try {
     return JSON.parse(text);

@@ -195,7 +195,7 @@ export default function ChatKioskPage() {
         </div>
 
         {/* Input Area */}
-        <div className="p-4 bg-black/60 border-t border-white/10 shrink-0">
+        <div className="p-4 bg-black/60 border-t border-white/10 shrink-0 z-20 relative">
           <form onSubmit={handleSend} className="relative flex items-center">
             <input 
               type="text" 
@@ -207,13 +207,13 @@ export default function ChatKioskPage() {
             <button 
               type="submit" 
               disabled={isLoading || !input.trim()}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-cyan-500 hover:bg-cyan-400 disabled:bg-slate-700 disabled:text-slate-500 text-black rounded-xl flex items-center justify-center transition-colors shadow-[0_0_15px_rgba(6,182,212,0.4)]"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 z-10 bg-cyan-500 hover:bg-cyan-400 disabled:bg-slate-700 disabled:text-slate-500 text-black rounded-xl flex items-center justify-center transition-colors shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer"
             >
               <Send className="w-5 h-5" />
             </button>
           </form>
           <div className="text-center mt-3 text-xs font-medium text-white/30">
-            Inteligência Artificial alimentada por Gemini 1.5 Pro
+            Inteligência Artificial alimentada por Gemini 3.5 Flash
           </div>
         </div>
       </Card>
